@@ -44,11 +44,11 @@
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(data)
       });
+
       const json = await resp.json();
       document.getElementById('result').textContent = JSON.stringify(json, null, 2);
     } catch (err) {
       document.getElementById('result').textContent = 'Erreur : ' + err;
-      document.getElementById('result').classList.add('error');
     } finally {
       submitBtn.textContent = originalText;
       submitBtn.disabled = false;
