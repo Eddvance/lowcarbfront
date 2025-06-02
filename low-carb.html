@@ -3,22 +3,39 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Consumption estimate</title>
+  <title>Low Carb - Estimation tarifaire</title>
   <link rel="stylesheet" href="css/low-carb-front.css">
 </head>
 <body>
 <div class="container">
-  <h1>Consumption estimate</h1>
+  <h1>🔌 Low Carb Energy</h1>
+
+  <div class="energy-info">
+    <div>Notre mix énergétique</div>
+    <div class="energy-mix">
+      <div class="energy-type">
+        <div class="dot dot-green"></div>
+        <span>81% Énergie verte</span>
+      </div>
+      <div class="energy-type">
+        <div class="dot dot-carbon"></div>
+        <span>19% Énergie carbonée</span>
+      </div>
+    </div>
+  </div>
+
   <form id="consumptionForm">
     <div class="form-group">
-      <label for="email">Email</label>
-      <input type="email" id="email" name="email" required>
+      <label for="email">📧 Email</label>
+      <input type="email" id="email" name="email" placeholder="votre@email.com" required>
     </div>
+
     <div class="form-group">
-      <label for="ratingRequest">Consummation (kWh)</label>
-      <input type="number" id="ratingRequest" name="ratingRequest" required step="any">
+      <label for="ratingRequest">⚡ Consommation (kWh)</label>
+      <input type="number" id="ratingRequest" name="ratingRequest" placeholder="Ex: 1000" required step="0.01" min="0">
     </div>
-    <button type="submit" class="btn-submit">Obtenir une estimation</button>
+
+    <button type="submit" class="btn-submit">Calculer mon tarif</button>
   </form>
 
   <div id="result" class="result" style="display:none;"></div>
@@ -27,30 +44,60 @@
 <script>
   document.getElementById('consumptionForm').addEventListener('submit', async function(e) {
     e.preventDefault();
-    const form = e.target;
 
-    const email = encodeURIComponent(form.email.value);
-    const ratingRequest = parseFloat(form.ratingRequest.value);
+    const email = document.getElementById('email').value;
+    const ratingRequest = parseFloat(document.getElementById('ratingRequest').value);
 
-    const submitBtn = form.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-    submitBtn.textContent = 'Calcul en cours...';
+    const submitBtn = document.querySelector('.btn-submit');
+    const resultDiv = document.getElementById('result');
+
+    // UI pendant le chargement
+    submitBtn.innerHTML = 'Calcul en cours<span class="loading"></span>';
     submitBtn.disabled = true;
+    resultDiv.style.display = 'none';
 
     try {
-      const resp = await fetch(`http://localhost:8080/lowcarb?email=${email}&ratingRequest=${ratingRequest}`, {
-        method: 'GET'
+      const response = await fetch(`http://localhost:8080/lowcarb?email=${encodeURIComponent(email)}&ratingRequest=${ratingRequest}`, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
       });
 
-      const json = await resp.json();
-      document.getElementById('result').textContent = JSON.stringify(json, null, 2);
-    } catch (err) {
-      document.getElementById('result').textContent = 'Erreur : ' + err.message;
-      document.getElementById('result').classList.add('error');
+      if (!response.ok) {
+        throw new Error(`Erreur HTTP: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Affichage du résultat
+      resultDiv.className = 'result success';
+      resultDiv.innerHTML = `
+        <h3 style="margin-bottom: 1rem; color: #2a5298;">📊 Estimation tarifaire</h3>
+        <div class="result-item">
+          <span class="result-label">Email:</span>
+          <span class="result-value">${data.email}</span>
+        </div>
+        <div class="result-item">
+          <span class="result-label">Consommation:</span>
+          <span class="result-value">${data.consummation}</span>
+        </div>
+        <div class="result-item">
+          <span class="result-label">Tarif estimé:</span>
+          <span class="result-value price">${data.rate}</span>
+        </div>
+      `;
+
+    } catch (error) {
+      resultDiv.className = 'result error';
+      resultDiv.innerHTML = `
+        <strong>❌ Erreur:</strong> ${error.message}<br>
+        <small>Vérifiez que le serveur Low Carb est bien démarré sur http://localhost:8080</small>
+      `;
     } finally {
-      submitBtn.textContent = originalText;
+      submitBtn.innerHTML = 'Calculer mon tarif';
       submitBtn.disabled = false;
-      document.getElementById('result').style.display = 'block';
+      resultDiv.style.display = 'block';
     }
   });
 </script>
